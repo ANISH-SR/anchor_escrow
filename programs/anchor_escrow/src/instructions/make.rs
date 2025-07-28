@@ -1,10 +1,12 @@
 #![allow(unexpected_cfgs)]
 #![allow(deprecated)]
 
+use crate::Escrow;
 use anchor_lang::prelude::*;
 use anchor_spl::associated_token::AssociatedToken;
-use anchor_spl::token_interface::{ Mint, TokenAccount, TokenInterface, TransferChecked, transfer_checked};
-use crate::Escrow;
+use anchor_spl::token_interface::{
+    transfer_checked, Mint, TokenAccount, TokenInterface, TransferChecked,
+};
 
 #[derive(Accounts)]
 #[instruction(seed: u64)]
@@ -55,15 +57,14 @@ pub struct Make<'info> {
 
 impl<'info> Make<'info> {
     pub fn init_escrow(&mut self, seed: u64, receive: u64, bumps: &MakeBumps) -> Result<()> {
-        self.escrow.set_inner(
-            Escrow { 
-                seed, 
-                maker: self.maker.key(), 
-                mint_a: self.mint_a.key(), 
-                mint_b: self.mint_b.key(), 
-                receive, 
-                bump: bumps.escrow 
-            });
+        self.escrow.set_inner(Escrow {
+            seed,
+            maker: self.maker.key(),
+            mint_a: self.mint_a.key(),
+            mint_b: self.mint_b.key(),
+            receive,
+            bump: bumps.escrow,
+        });
 
         Ok(())
     }
@@ -73,11 +74,12 @@ impl<'info> Make<'info> {
             from: self.maker_ata_a.to_account_info(),
             mint: self.mint_a.to_account_info(),
             to: self.vault.to_account_info(),
-            authority: self.maker.to_account_info()
+            authority: self.maker.to_account_info(),
         };
 
         let cpi_ctx = CpiContext::new(self.token_program.to_account_info(), transfer_accounts);
 
-        transfer_checked(cpi_ctx, deposit, self.mint_a.decimals)
+        let decimals = self.mint_a.decimals;
+        transfer_checked(cpi_ctx, deposit, decimals)
     }
 }
